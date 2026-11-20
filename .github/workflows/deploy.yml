@@ -32,5 +32,5 @@ jobs:
         run: |
           sudo /bin/systemctl restart ldkh-backend.service
           sleep 3
-          sudo /bin/systemctl is-active ldkh-backend.service
+          systemctl is-active ldkh-backend.service
           curl -fsS http://127.0.0.1:8000/api/v1/health
