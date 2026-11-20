@@ -1,0 +1,36 @@
+name: Deploy LDKH GIS Backend
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync code to /opt/rb-gis/backend
+        run: |
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.venv' \
+            --exclude '.env' \
+            --exclude 'storage' \
+            --exclude '__pycache__' \
+            ./ /opt/rb-gis/backend/
+
+      - name: Install Python dependencies
+        run: |
+          cd /opt/rb-gis/backend
+          .venv/bin/pip install -r requirements.txt
+
+      - name: Restart ldkh-backend service
+        run: |
+          sudo /bin/systemctl restart ldkh-backend.service
+          sleep 3
+          sudo /bin/systemctl is-active ldkh-backend.service
+          curl -fsS http://127.0.0.1:8000/api/v1/health
