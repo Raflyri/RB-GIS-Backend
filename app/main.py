@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.pdf_security import get_synology_base_dir
+from app.core.pdf_security import get_synology_base_dir, safe_is_dir
 from app.core.security import require_viewer
 from app.db.session import get_db
 from app.models import Document, LegalStatus, OcrRawData, Parcel, User, VerificationStatus
@@ -110,9 +110,9 @@ def health_check() -> Dict[str, Any]:
         "version": settings.VERSION,
         "synology_mount": {
             "configured_path": str(configured_mount),
-            "configured_accessible": configured_mount.exists() and configured_mount.is_dir(),
+            "configured_accessible": safe_is_dir(configured_mount),
             "active_base_path": str(resolved_base),
-            "active_accessible": resolved_base.exists() and resolved_base.is_dir(),
+            "active_accessible": safe_is_dir(resolved_base),
         },
     }
 

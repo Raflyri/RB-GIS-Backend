@@ -82,11 +82,30 @@ def get_upload_storage_dir() -> Path:
     return configured.resolve()
 
 
+def safe_is_dir(path: Path) -> bool:
+    """Memeriksa direktori secara aman terhadap error mount jaringan (mis. EHOSTDOWN Synology)."""
+    try:
+        return path.exists() and path.is_dir()
+    except OSError:
+        return False
+
+
+def safe_is_file(path: Path) -> bool:
+    """Memeriksa file secara aman terhadap error mount jaringan (mis. EHOSTDOWN Synology)."""
+    try:
+        return path.exists() and path.is_file()
+    except OSError:
+        return False
+
+
 def get_synology_base_dir() -> Path:
     """Mengembalikan direktori dasar dokumen Synology (atau mock lokal saat development)."""
     configured = Path(settings.SYNOLOGY_MOUNT_PATH)
-    if configured.exists() and configured.is_dir():
-        return configured.resolve()
+    if safe_is_dir(configured):
+        try:
+            return configured.resolve()
+        except OSError:
+            pass
 
     repo_root = Path(__file__).resolve().parents[3]
     mock_dir = repo_root / "infra" / "mock-synology" / "LDKH-Documents"
@@ -124,11 +143,14 @@ def resolve_synology_file_path(relative_path: str) -> Path:
     upload_target = (upload_base / sanitized).resolve()
     if not upload_target.is_relative_to(upload_base):
         raise ValueError("Akses path di luar direktori upload ditolak.")
-    if upload_target.exists() and upload_target.is_file():
+    if safe_is_file(upload_target):
         return upload_target
 
     base_dir = get_synology_base_dir()
-    target = (base_dir / sanitized).resolve()
+    try:
+        target = (base_dir / sanitized).resolve()
+    except OSError:
+        return base_dir / sanitized
     if not target.is_relative_to(base_dir):
         raise ValueError("Akses path di luar direktori mount Synology ditolak.")
 

@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.pdf_security import (
     generate_sample_pdf_bytes,
     resolve_synology_file_path,
+    safe_is_file,
     sanitize_relative_pdf_path,
     verify_pdf_stream_token,
 )
@@ -65,11 +66,17 @@ def stream_document_pdf(
         "X-Content-Type-Options": "nosniff",
     }
 
+    is_target_file = safe_is_file(target_path)
+    synology_prefix = ""
+    try:
+        synology_prefix = str(Path(settings.SYNOLOGY_MOUNT_PATH).resolve())
+    except OSError:
+        synology_prefix = settings.SYNOLOGY_MOUNT_PATH
+
     if (
         delivery == "accel"
-        and target_path.exists()
-        and target_path.is_file()
-        and str(target_path).startswith(str(Path(settings.SYNOLOGY_MOUNT_PATH).resolve()))
+        and is_target_file
+        and str(target_path).startswith(synology_prefix)
     ):
         internal_prefix = settings.NGINX_INTERNAL_PDF_PREFIX.rstrip("/")
         return Response(
@@ -82,7 +89,7 @@ def stream_document_pdf(
             },
         )
 
-    if target_path.exists() and target_path.is_file():
+    if is_target_file:
         return FileResponse(
             path=target_path,
             media_type="application/pdf",
