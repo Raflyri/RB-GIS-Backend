@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.api.endpoints.guest_auth import router as guest_router
 from app.core.security import (
     ACCESS_COOKIE_NAME,
     create_access_token,
@@ -15,6 +16,7 @@ from app.models.user import User
 from app.schemas.auth import LoginRequest, TokenResponse, UserRead
 
 router = APIRouter()
+router.include_router(guest_router, prefix="/guest", tags=["auth-guest"])
 
 
 @router.post("/login", response_model=TokenResponse)

@@ -58,6 +58,12 @@ def stream_document_pdf(
         ) from exc
 
     filename = Path(clean_relative_path).name or f"{document.document_number}.pdf"
+    hardened_headers = {
+        "Content-Disposition": f'inline; filename="{filename}"',
+        "Cache-Control": "no-store, no-cache, must-revalidate, private",
+        "Pragma": "no-cache",
+        "X-Content-Type-Options": "nosniff",
+    }
 
     if (
         delivery == "accel"
@@ -72,7 +78,7 @@ def stream_document_pdf(
             headers={
                 "X-Accel-Redirect": f"{internal_prefix}/{clean_relative_path}",
                 "Content-Type": "application/pdf",
-                "Cache-Control": "private, no-store",
+                **hardened_headers,
             },
         )
 
@@ -80,10 +86,7 @@ def stream_document_pdf(
         return FileResponse(
             path=target_path,
             media_type="application/pdf",
-            headers={
-                "Content-Disposition": f'inline; filename="{filename}"',
-                "Cache-Control": "private, no-store",
-            },
+            headers=hardened_headers,
         )
 
     # Fallback apabila file fisik scan PDF belum diunggah ke server/Synology
@@ -96,8 +99,7 @@ def stream_document_pdf(
         content=sample_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'inline; filename="{filename}"',
-            "Cache-Control": "private, no-store",
+            **hardened_headers,
             "X-LDKH-Fallback-Sample": "true",
         },
     )

@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.security import require_admin, require_editor, require_viewer
+from app.core.security import require_admin, require_viewer
 from app.db.session import get_db
 from app.models import Document, Owner, OwnerType, Parcel, User
 from app.schemas import OwnerCreate, OwnerRead, OwnerUpdate
@@ -70,7 +70,7 @@ def get_owner(
 def create_owner(
     payload: OwnerCreate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> Owner:
     """Menambahkan catatan pemilik baru dalam rantai riwayat kepemilikan."""
     if payload.parcel_id is not None:
@@ -112,7 +112,7 @@ def update_owner(
     owner_id: UUID,
     payload: OwnerUpdate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> Owner:
     """Memperbarui data riwayat kepemilikan tanah."""
     owner = db.query(Owner).filter(Owner.id == owner_id).first()

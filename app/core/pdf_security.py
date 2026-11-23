@@ -148,14 +148,15 @@ def _escape_pdf_text(text: str) -> str:
 
 def generate_sample_pdf_bytes(title: str, doc_number: str, synology_path: str) -> bytes:
     """Menghasilkan file PDF %PDF-1.4 valid secara dinamis dengan xref offset akurat."""
+    safe_ref_name = PurePosixPath(synology_path).name or doc_number
     lines = [
         "SISTEM WEB GIS DIGITALISASI TANAH LDKH",
-        "Arsip Dokumen Legal (Synology DS218j / Nextcloud Linker)",
+        "Arsip Dokumen Legal (Synology Vault Linker)",
         f"Nomor Dokumen : {doc_number}",
         f"Judul Dokumen : {title}",
-        f"Path Target   : {synology_path}",
+        f"Referensi     : {safe_ref_name}",
         "Status File   : Belum ada PDF fisik (dummy CSV / placeholder).",
-        "Tindakan      : Gunakan tombol 'Ganti / Upload PDF' untuk mengunggah scan asli.",
+        "Tindakan      : Gunakan tombol 'Ganti / Upload PDF' oleh Admin untuk mengunggah scan asli.",
     ]
 
     stream_commands = ["BT", "/F1 12 Tf", "50 750 Td", "18 TL"]

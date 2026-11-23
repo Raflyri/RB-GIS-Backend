@@ -1,6 +1,21 @@
 """Ekspor seluruh Pydantic schemas untuk router Backend API LDKH."""
 
-from app.schemas.auth import LoginRequest, TokenResponse, UserRead
+from app.schemas.auth import (
+    GuestAccessRequestPayload,
+    GuestAccessRequestResponse,
+    GuestAccessStatusResponse,
+    GuestApprovalActionPayload,
+    GuestApprovalActionResponse,
+    GuestApprovalDetailResponse,
+    GuestExchangeRequest,
+    HermesDecisionPayload,
+    HermesDecisionResponse,
+    HermesPendingRequestItem,
+    HermesPendingResponse,
+    LoginRequest,
+    TokenResponse,
+    UserRead,
+)
 from app.schemas.document import (
     DocumentBase,
     DocumentCreate,
@@ -52,6 +67,17 @@ __all__ = [
     "DocumentUpdate",
     "DuplicateStrategy",
     "GeoJSONGeometry",
+    "GuestAccessRequestPayload",
+    "GuestAccessRequestResponse",
+    "GuestAccessStatusResponse",
+    "GuestApprovalActionPayload",
+    "GuestApprovalActionResponse",
+    "GuestApprovalDetailResponse",
+    "GuestExchangeRequest",
+    "HermesDecisionPayload",
+    "HermesDecisionResponse",
+    "HermesPendingRequestItem",
+    "HermesPendingResponse",
     "LoginRequest",
     "OcrHitlVerifyRequest",
     "TokenResponse",

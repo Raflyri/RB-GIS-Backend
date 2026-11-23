@@ -20,7 +20,7 @@ from geoalchemy2 import Geography
 from sqlalchemy import Numeric, cast, func, or_
 from sqlalchemy.orm import Session, selectinload
 
-from app.core.security import require_admin, require_editor, require_viewer
+from app.core.security import require_admin, require_viewer
 from app.db.session import get_db
 from app.models import Document, LegalStatus, Owner, Parcel, User
 from app.schemas import (
@@ -566,7 +566,7 @@ def get_parcel(
 def create_parcel(
     payload: ParcelCreate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> ParcelDetailRead:
     """Membuat persil spasial baru (termasuk dari digitasi browser) dengan normalisasi luasan ke m2."""
     existing = (
@@ -671,7 +671,7 @@ def update_parcel(
     parcel_id: UUID,
     payload: ParcelUpdate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> ParcelDetailRead:
     """Memperbarui atribut tabular maupun geometri poligon persil tanah tanpa memutus dokumen tertaut."""
     parcel = db.query(Parcel).filter(Parcel.id == parcel_id).first()

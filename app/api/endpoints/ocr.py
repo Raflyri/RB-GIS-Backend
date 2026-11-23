@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.security import require_editor, require_viewer
+from app.core.security import require_admin, require_viewer
 from app.db.session import get_db
 from app.models import Document, LegalStatus, OcrRawData, User, VerificationStatus
 from app.schemas import OcrHitlVerifyRequest, OcrRawDataCreate, OcrRawDataRead
@@ -71,7 +71,7 @@ def upsert_initial_ocr(
     document_id: UUID,
     payload: OcrRawDataCreate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> OcrRawData:
     """Menyimpan atau memperbarui hasil ekstraksi awal OCR Claude AI (DRAFT_AI / NEEDS_REVIEW)."""
     document = db.query(Document).filter(Document.id == document_id).first()
@@ -105,7 +105,7 @@ def verify_ocr_hitl(
     document_id: UUID,
     payload: OcrHitlVerifyRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_editor),
+    current_user: User = Depends(require_admin),
 ) -> OcrRawData:
     """Endpoint Human-in-the-Loop untuk mengoreksi, memverifikasi, dan menyinkronkan data OCR ke tabel documents."""
     document = db.query(Document).filter(Document.id == document_id).first()

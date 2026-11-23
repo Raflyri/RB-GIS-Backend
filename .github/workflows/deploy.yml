@@ -23,10 +23,11 @@ jobs:
             --exclude '__pycache__' \
             ./ /opt/rb-gis/backend/
 
-      - name: Install Python dependencies
+      - name: Install Python dependencies & run Alembic migrations
         run: |
           cd /opt/rb-gis/backend
           .venv/bin/pip install -r requirements.txt
+          .venv/bin/alembic upgrade head
 
       - name: Restart ldkh-backend service
         run: |

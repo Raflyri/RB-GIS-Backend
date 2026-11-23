@@ -27,7 +27,7 @@ from app.core.pdf_security import (
     sanitize_relative_pdf_path,
     save_uploaded_pdf,
 )
-from app.core.security import require_admin, require_editor, require_viewer
+from app.core.security import require_admin, require_viewer
 from app.db.session import get_db
 from app.models import (
     Document,
@@ -154,7 +154,7 @@ def get_document(
 def create_document(
     payload: DocumentCreate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> Document:
     """Menyimpan metadata dokumen legal (tanpa BLOB PDF) dengan normalisasi luasan ke m2."""
     if payload.parcel_id is not None:
@@ -210,7 +210,7 @@ async def upload_document_pdf(
     original_area_unit: Optional[str] = Form(default="m2"),
     notes: Optional[str] = Form(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_editor),
+    current_user: User = Depends(require_admin),
 ) -> Document:
     """Mengunggah file PDF baru ke storage backend dan mendaftarkan metadata dokumen (mendukung 1-to-Many)."""
     parcel: Optional[Parcel] = None
@@ -292,7 +292,7 @@ async def replace_document_pdf(
     file: UploadFile = File(...),
     title: Optional[str] = Form(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_editor),
+    current_user: User = Depends(require_admin),
 ) -> Document:
     """Mengunggah atau mengganti file PDF fisik untuk dokumen eksisting (termasuk dummy CSV)."""
     document = db.query(Document).filter(Document.id == document_id).first()
@@ -348,7 +348,7 @@ def update_document(
     document_id: UUID,
     payload: DocumentUpdate,
     db: Session = Depends(get_db),
-    _current_user: User = Depends(require_editor),
+    _current_user: User = Depends(require_admin),
 ) -> Document:
     """Memperbarui metadata dokumen atau menautkan orphaned record ke parcel_id."""
     document = db.query(Document).filter(Document.id == document_id).first()

@@ -43,6 +43,18 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-4-hydrogen"
 
+    # Just-in-Time Guest Access & Integrasi Hermes AI Agent (ZeroTier Private Tunnel)
+    APP_PUBLIC_URL: str = "https://gis.rbeverything.com"
+    HERMES_SHARED_SECRET: str = "change-this-hermes-shared-secret-64-hex"
+    HERMES_WEBHOOK_URL: str = "http://10.10.10.167:8787/webhook/gis-guest"
+    HERMES_ALLOWED_IPS: Annotated[List[str], NoDecode] = [
+        "10.10.10.167",
+        "127.0.0.1",
+        "::1",
+    ]
+    GUEST_REQUEST_TTL_MINUTES: int = 30
+    GUEST_SESSION_TTL_HOURS: int = 3
+
     CORS_ORIGINS: Annotated[List[str], NoDecode] = [
         "http://localhost:3000",
         "http://localhost:8080",
@@ -55,7 +67,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("CORS_ORIGINS", "TRUSTED_PROXY_IPS", mode="before")
+    @field_validator("CORS_ORIGINS", "TRUSTED_PROXY_IPS", "HERMES_ALLOWED_IPS", mode="before")
     @classmethod
     def parse_str_list(cls, value: str | List[str]) -> List[str]:
         """Mengonversi string dipisahkan koma atau JSON array dari .env menjadi list."""

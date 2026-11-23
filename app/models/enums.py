@@ -51,3 +51,14 @@ class UserRole(str, Enum):
     ADMIN = "ADMIN"
     AUDITOR = "AUDITOR"
     VIEWER = "VIEWER"
+    GUEST = "GUEST"
+
+
+class GuestRequestStatus(str, Enum):
+    """Status siklus permintaan akses Guest Just-in-Time (JIT)."""
+
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+    REVOKED = "REVOKED"

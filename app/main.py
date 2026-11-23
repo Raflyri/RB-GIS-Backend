@@ -37,11 +37,33 @@ async def reverse_proxy_guard_middleware(request: Request, call_next):
     if settings.ENFORCE_REVERSE_PROXY:
         client_ip = request.client.host if request.client else ""
         trusted_ips = set(settings.TRUSTED_PROXY_IPS)
+        hermes_ips = set(settings.HERMES_ALLOWED_IPS)
         has_nginx_header = (
             request.headers.get("x-forwarded-by-nginx", "").lower() == "true"
         )
         host_header = (request.headers.get("host") or "").lower()
         is_direct_backend_port = ":8000" in host_header and client_ip not in trusted_ips
+        is_hermes_internal_path = request.url.path.startswith(
+            f"{settings.API_V1_STR}/auth/guest/hermes/"
+        )
+
+        if is_hermes_internal_path:
+            # Jalur privat ZeroTier Hermes CT 101 -> langsung ke backend tanpa lewat Nginx publik
+            if has_nginx_header or bool(request.headers.get("cf-connecting-ip")):
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={
+                        "detail": "Akses endpoint internal Hermes melalui reverse proxy publik ditolak."
+                    },
+                )
+            if client_ip not in hermes_ips:
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={
+                        "detail": "Akses endpoint internal Hermes hanya diizinkan dari ZeroTier CT 101."
+                    },
+                )
+            return await call_next(request)
 
         if request.url.path == f"{settings.API_V1_STR}/health":
             if not (client_ip in ("127.0.0.1", "::1", "testclient") or has_nginx_header):

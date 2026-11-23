@@ -4,11 +4,13 @@ from app.db.session import Base
 from app.models.document import Document
 from app.models.enums import (
     DocumentType,
+    GuestRequestStatus,
     LegalStatus,
     OwnerType,
     UserRole,
     VerificationStatus,
 )
+from app.models.guest import GuestAccessRequest, GuestSession
 from app.models.ocr_raw_data import OcrRawData
 from app.models.owner import Owner
 from app.models.parcel import Parcel
@@ -18,6 +20,9 @@ __all__ = [
     "Base",
     "Document",
     "DocumentType",
+    "GuestAccessRequest",
+    "GuestRequestStatus",
+    "GuestSession",
     "LegalStatus",
     "OcrRawData",
     "Owner",
