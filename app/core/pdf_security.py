@@ -3,7 +3,9 @@
 from datetime import datetime, timedelta, timezone
 import hashlib
 from pathlib import Path, PurePosixPath
-from typing import Any
+import threading
+import time
+from typing import Any, Optional
 from uuid import UUID
 
 import jwt
@@ -12,6 +14,12 @@ from app.core.config import settings
 
 ALGORITHM = "HS256"
 MAX_PDF_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+SYNOLOGY_PROBE_TIMEOUT_SECONDS = 0.4
+SYNOLOGY_NEGATIVE_CACHE_SECONDS = 15.0
+
+_mount_probe_lock = threading.Lock()
+_mount_probe_thread: Optional[threading.Thread] = None
+_mount_down_until: float = 0.0
 
 
 def sanitize_relative_pdf_path(relative_path: str) -> str:
@@ -82,8 +90,51 @@ def get_upload_storage_dir() -> Path:
     return configured.resolve()
 
 
+def _is_under_synology_mount(path: Path) -> bool:
+    """Mendeteksi apakah path berada pada mount jaringan Synology tanpa memanggil stat()."""
+    raw_mount = settings.SYNOLOGY_MOUNT_PATH.rstrip("/\\")
+    raw_path = str(path)
+    return raw_path == raw_mount or raw_path.startswith(raw_mount + "/") or raw_path.startswith(raw_mount + "\\")
+
+
+def _probe_synology_mount_ready() -> bool:
+    """Memeriksa mount Synology dengan timeout singkat agar worker tidak hang saat NAS offline."""
+    global _mount_probe_thread, _mount_down_until
+
+    now = time.monotonic()
+    mount_path = Path(settings.SYNOLOGY_MOUNT_PATH)
+
+    with _mount_probe_lock:
+        if now < _mount_down_until:
+            return False
+        if _mount_probe_thread is not None and _mount_probe_thread.is_alive():
+            return False
+
+        result: dict[str, bool] = {"ok": False}
+
+        def _worker() -> None:
+            try:
+                result["ok"] = mount_path.exists() and mount_path.is_dir()
+            except OSError:
+                result["ok"] = False
+
+        probe = threading.Thread(target=_worker, daemon=True)
+        _mount_probe_thread = probe
+        probe.start()
+
+    probe.join(timeout=SYNOLOGY_PROBE_TIMEOUT_SECONDS)
+    if probe.is_alive() or not result["ok"]:
+        with _mount_probe_lock:
+            _mount_down_until = time.monotonic() + SYNOLOGY_NEGATIVE_CACHE_SECONDS
+        return False
+    return True
+
+
 def safe_is_dir(path: Path) -> bool:
-    """Memeriksa direktori secara aman terhadap error mount jaringan (mis. EHOSTDOWN Synology)."""
+    """Memeriksa direktori secara aman terhadap error/hang mount jaringan Synology."""
+    if _is_under_synology_mount(path):
+        if not _probe_synology_mount_ready():
+            return False
     try:
         return path.exists() and path.is_dir()
     except OSError:
@@ -91,7 +142,10 @@ def safe_is_dir(path: Path) -> bool:
 
 
 def safe_is_file(path: Path) -> bool:
-    """Memeriksa file secara aman terhadap error mount jaringan (mis. EHOSTDOWN Synology)."""
+    """Memeriksa file secara aman terhadap error/hang mount jaringan Synology."""
+    if _is_under_synology_mount(path):
+        if not _probe_synology_mount_ready():
+            return False
     try:
         return path.exists() and path.is_file()
     except OSError:
@@ -147,6 +201,9 @@ def resolve_synology_file_path(relative_path: str) -> Path:
         return upload_target
 
     base_dir = get_synology_base_dir()
+    if _is_under_synology_mount(base_dir):
+        if not _probe_synology_mount_ready():
+            return base_dir / sanitized
     try:
         target = (base_dir / sanitized).resolve()
     except OSError:
